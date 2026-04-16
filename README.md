@@ -2,6 +2,16 @@
 
 `cloc-studio` is a macOS SwiftUI desktop app for visualizing code-count results from `cloc`.
 
+## IMPORTANT: Upstream Credit
+This project is a GUI wrapper for `cloc`.
+
+Core counting engine and language logic come from the upstream `cloc` project by **Al Danial** and contributors:
+
+- Upstream repository: https://github.com/AlDanial/cloc
+- Upstream author: Al Danial
+
+`cloc-studio` does **not** replace `cloc`; it only provides a macOS desktop interface on top of it.
+
 ## Screenshots
 Overview:
 
