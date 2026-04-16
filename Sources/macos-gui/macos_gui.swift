@@ -444,9 +444,21 @@ struct ContentView: View {
 
                         card {
                             VStack(alignment: .leading, spacing: 10) {
-                                Label("Language Breakdown", systemImage: "chart.bar.xaxis")
-                                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(Color(red: 0.16, green: 0.23, blue: 0.34))
+                                HStack {
+                                    Label("Language Breakdown", systemImage: "chart.bar.xaxis")
+                                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(Color(red: 0.16, green: 0.23, blue: 0.34))
+                                    Spacer()
+                                    Button("Copy Table") { copyBreakdownAsWordTable() }
+                                        .buttonStyle(.bordered)
+                                        .disabled(viewModel.rows.isEmpty)
+                                    Button("Copy Text") { copyBreakdownAsText() }
+                                        .buttonStyle(.bordered)
+                                        .disabled(viewModel.rows.isEmpty)
+                                    Button("Copy Markdown") { copyBreakdownAsMarkdown() }
+                                        .buttonStyle(.bordered)
+                                        .disabled(viewModel.rows.isEmpty)
+                                }
 
                                 breakdownList
                             }
@@ -622,6 +634,95 @@ struct ContentView: View {
             .truncationMode(.middle)
             .frame(width: width, height: 32, alignment: align)
             .padding(.horizontal, align == .leading ? 10 : 0)
+    }
+
+    private func copyBreakdownAsWordTable() {
+        copyWordTableToPasteboard(
+            plainText: makeBreakdownTSV(),
+            html: makeBreakdownHTMLTable()
+        )
+        viewModel.statusMessage = "Copied Word table format to clipboard"
+    }
+
+    private func copyBreakdownAsText() {
+        copyToPasteboard(makeBreakdownPlainText())
+        viewModel.statusMessage = "Copied text format to clipboard"
+    }
+
+    private func copyBreakdownAsMarkdown() {
+        copyToPasteboard(makeBreakdownMarkdownTable())
+        viewModel.statusMessage = "Copied Markdown table to clipboard"
+    }
+
+    private func copyToPasteboard(_ text: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+    }
+
+    private func copyWordTableToPasteboard(plainText: String, html: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(plainText, forType: .string)
+        pasteboard.setString(html, forType: .html)
+    }
+
+    private func makeBreakdownTSV() -> String {
+        var lines = ["Language\tFiles\tCode\tComment\tBlank"]
+        for row in viewModel.rows {
+            lines.append("\(row.name)\t\(row.files)\t\(row.code)\t\(row.comment)\t\(row.blank)")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private func makeBreakdownPlainText() -> String {
+        let top = viewModel.rows.prefix(5)
+        var lines = ["Language Breakdown Summary"]
+        lines.append("Total languages: \(viewModel.rows.count)")
+        lines.append("Top languages by code lines:")
+        for row in top {
+            lines.append("• \(row.name): \(row.code) code lines (\(row.files) files)")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private func makeBreakdownMarkdownTable() -> String {
+        var lines = [
+            "| Language | Files | Code | Comment | Blank |",
+            "|---|---:|---:|---:|---:|",
+        ]
+        for row in viewModel.rows {
+            lines.append("| \(escapeMarkdown(row.name)) | \(row.files) | \(row.code) | \(row.comment) | \(row.blank) |")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private func makeBreakdownHTMLTable() -> String {
+        var html = "<table><thead><tr>"
+        html += "<th>Language</th><th>Files</th><th>Code</th><th>Comment</th><th>Blank</th>"
+        html += "</tr></thead><tbody>"
+        for row in viewModel.rows {
+            html += "<tr>"
+            html += "<td>\(escapeHTML(row.name))</td>"
+            html += "<td>\(row.files)</td>"
+            html += "<td>\(row.code)</td>"
+            html += "<td>\(row.comment)</td>"
+            html += "<td>\(row.blank)</td>"
+            html += "</tr>"
+        }
+        html += "</tbody></table>"
+        return html
+    }
+
+    private func escapeHTML(_ text: String) -> String {
+        text
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+    }
+
+    private func escapeMarkdown(_ text: String) -> String {
+        text.replacingOccurrences(of: "|", with: "\\|")
     }
 }
 
