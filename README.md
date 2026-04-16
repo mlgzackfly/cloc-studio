@@ -2,7 +2,7 @@
 
 `cloc-studio` is a macOS SwiftUI desktop app for visualizing code-count results from `cloc`.
 
-![cloc-studio icon](assets/AppIcon-1024.png)
+<img src="assets/AppIcon-1024.png" alt="cloc-studio icon" width="180" />
 
 ## IMPORTANT: Upstream Credit
 This project is a GUI wrapper for `cloc`.
