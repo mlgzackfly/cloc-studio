@@ -13,6 +13,8 @@ MACOS_DIR="$CONTENTS_DIR/MacOS"
 RES_DIR="$CONTENTS_DIR/Resources"
 DIST_DIR="$ROOT_DIR/dist"
 ZIP_PATH="$DIST_DIR/$APP_NAME.zip"
+VENDOR_CLOC_PATH="$ROOT_DIR/vendor/cloc"
+VENDOR_CLOC_SHA_PATH="$ROOT_DIR/vendor/cloc.sha256"
 
 # Configurable options:
 # - APP_SIGN_IDENTITY: codesign identity (default "-" for ad-hoc)
@@ -43,11 +45,28 @@ cp "$BIN_PATH" "$MACOS_DIR/$APP_NAME"
 chmod +x "$MACOS_DIR/$APP_NAME"
 
 # Bundle vendored cloc executable so macos-gui can be packaged standalone.
-if [[ ! -x "$ROOT_DIR/vendor/cloc" ]]; then
-  echo "Missing vendored cloc at $ROOT_DIR/vendor/cloc" >&2
+if [[ ! -x "$VENDOR_CLOC_PATH" ]]; then
+  echo "Missing vendored cloc at $VENDOR_CLOC_PATH" >&2
   exit 1
 fi
-cp "$ROOT_DIR/vendor/cloc" "$RES_DIR/cloc"
+if [[ ! -f "$VENDOR_CLOC_SHA_PATH" ]]; then
+  echo "Missing checksum file: $VENDOR_CLOC_SHA_PATH" >&2
+  exit 1
+fi
+EXPECTED_VENDOR_SHA="$(awk '{print $1; exit}' "$VENDOR_CLOC_SHA_PATH")"
+if [[ -z "$EXPECTED_VENDOR_SHA" ]]; then
+  echo "Invalid checksum file: $VENDOR_CLOC_SHA_PATH" >&2
+  exit 1
+fi
+ACTUAL_VENDOR_SHA="$(shasum -a 256 "$VENDOR_CLOC_PATH" | awk '{print $1}')"
+if [[ "$ACTUAL_VENDOR_SHA" != "$EXPECTED_VENDOR_SHA" ]]; then
+  echo "vendor/cloc checksum mismatch." >&2
+  echo "Expected: $EXPECTED_VENDOR_SHA" >&2
+  echo "Actual:   $ACTUAL_VENDOR_SHA" >&2
+  echo "If vendor/cloc was intentionally updated, refresh $VENDOR_CLOC_SHA_PATH." >&2
+  exit 1
+fi
+cp "$VENDOR_CLOC_PATH" "$RES_DIR/cloc"
 chmod +x "$RES_DIR/cloc"
 cp "$ROOT_DIR/assets/AppIcon.icns" "$RES_DIR/AppIcon.icns"
 

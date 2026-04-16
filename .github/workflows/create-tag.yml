@@ -9,7 +9,7 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   create-tag:
@@ -23,12 +23,6 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.RELEASE_PAT }}
-
       - name: Validate version
         run: |
           VERSION="${{ github.event.inputs.version }}"
@@ -37,16 +31,23 @@ jobs:
             exit 1
           fi
 
-      - name: Create and push tag
+      - name: Create tag via GitHub API
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+          REPO: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           TAG="v${{ github.event.inputs.version }}"
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag already exists locally: $TAG"
-            exit 1
-          fi
-          if git ls-remote --tags origin "$TAG" | grep -q "$TAG"; then
+          if gh api "repos/$REPO/git/ref/tags/$TAG" >/dev/null 2>&1; then
             echo "Tag already exists on remote: $TAG"
             exit 1
           fi
-          git tag "$TAG"
-          git push origin "$TAG"
+          SHA="$(gh api "repos/$REPO/commits/$DEFAULT_BRANCH" --jq .sha)"
+          if [[ -z "$SHA" || "$SHA" == "null" ]]; then
+            echo "Failed to resolve default branch commit SHA"
+            exit 1
+          fi
+          gh api "repos/$REPO/git/refs" \
+            -f ref="refs/tags/$TAG" \
+            -f sha="$SHA"
+          echo "Created tag $TAG at $SHA"

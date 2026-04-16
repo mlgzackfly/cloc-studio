@@ -66,6 +66,9 @@ cd macos-gui
 ./scripts/package_app.sh
 ```
 
+Security check during packaging:
+- Verifies `vendor/cloc` against `vendor/cloc.sha256` before bundling.
+
 Output:
 - `dist/cloc-studio.app`
 - `dist/cloc-studio.zip`
@@ -100,9 +103,9 @@ This repository includes two workflows:
 
 Required repository secret:
 
-- `RELEASE_PAT`: Personal Access Token used by `create-tag.yml` to push tags.
-  - Recommended scopes (classic PAT): `repo`, `workflow`
-  - Why needed: tags pushed by default `GITHUB_TOKEN` do not trigger the second workflow.
+- `RELEASE_PAT`: Personal Access Token used by `create-tag.yml` for GitHub API tag creation.
+  - Recommended: Fine-grained PAT with repository `Contents: Read and write` only.
+  - Why needed: tags created by default `GITHUB_TOKEN` do not trigger the second workflow.
 
 Release flow:
 

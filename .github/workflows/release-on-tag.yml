@@ -14,7 +14,9 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
 
       - name: Build app package
         run: ./scripts/package_app.sh
@@ -23,9 +25,12 @@ jobs:
         run: shasum -a 256 dist/cloc-studio.zip > dist/cloc-studio.zip.sha256
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            dist/cloc-studio.zip
-            dist/cloc-studio.zip.sha256
-          generate_release_notes: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          gh release create "$TAG" \
+            dist/cloc-studio.zip \
+            dist/cloc-studio.zip.sha256 \
+            --generate-notes \
+            --verify-tag
