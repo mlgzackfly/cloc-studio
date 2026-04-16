@@ -68,6 +68,19 @@ Output:
 - `dist/ClocGUI.app`
 - `dist/ClocGUI.zip`
 
+## If macOS blocks opening the app
+If Gatekeeper blocks launch for a downloaded build, remove quarantine attributes:
+
+```bash
+xattr -d com.apple.quarantine /path/to/ClocGUI.app
+```
+
+If needed for nested files:
+
+```bash
+xattr -dr com.apple.quarantine /path/to/ClocGUI.app
+```
+
 ## Notarized release (optional)
 ```bash
 cd macos-gui
