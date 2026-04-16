@@ -1,0 +1,20 @@
+cloc-studio
+===========
+
+This project bundles and invokes the cloc tool.
+
+Upstream project:
+  cloc (Count Lines of Code)
+  Author: Al Danial and contributors
+  Repository: https://github.com/AlDanial/cloc
+
+Bundled component in this repository:
+  vendor/cloc
+
+License:
+  The bundled cloc component is distributed under the GNU General Public License
+  (GPL v2 or later), per upstream license and source notices.
+
+Source and notices:
+  - Upstream source: https://github.com/AlDanial/cloc
+  - Upstream license text is included in LICENSE
