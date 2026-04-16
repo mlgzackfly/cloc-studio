@@ -122,28 +122,24 @@ final class ClocViewModel: ObservableObject {
             }
         }
 
-        #if DEBUG
-        let cwd = FileManager.default.currentDirectoryPath
-        let candidates = [
-            URL(fileURLWithPath: cwd).appendingPathComponent("vendor/cloc").path,
-            URL(fileURLWithPath: cwd).appendingPathComponent("../cloc").path,
-            "/opt/homebrew/bin/cloc",
-            "/usr/local/bin/cloc",
-            "/usr/bin/cloc",
-        ]
-        #else
-        // Release builds only allow trusted system locations as fallback.
         let candidates = [
             "/opt/homebrew/bin/cloc",
             "/usr/local/bin/cloc",
             "/usr/bin/cloc",
         ]
-        #endif
         for candidate in candidates {
             if FileManager.default.isExecutableFile(atPath: candidate) {
                 return URL(fileURLWithPath: candidate)
             }
         }
+
+        #if DEBUG
+        // Optional local override for development. Must be an absolute executable path.
+        if let override = ProcessInfo.processInfo.environment["CLOC_STUDIO_LOCAL_CLOC"], override.hasPrefix("/"),
+           FileManager.default.isExecutableFile(atPath: override) {
+            return URL(fileURLWithPath: override)
+        }
+        #endif
         return nil
     }
 

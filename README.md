@@ -74,7 +74,7 @@ Output:
 - `dist/cloc-studio.zip`
 
 ## If macOS blocks opening the app
-If Gatekeeper blocks launch for a downloaded build, remove quarantine attributes:
+If Gatekeeper blocks launch for a downloaded build, remove quarantine attributes only when the app is from a trusted source you verified:
 
 ```bash
 xattr -d com.apple.quarantine /path/to/cloc-studio.app
@@ -105,6 +105,8 @@ Required repository secret:
 
 - `RELEASE_PAT`: Personal Access Token used by `create-tag.yml` for GitHub API tag creation.
   - Recommended: Fine-grained PAT with repository `Contents: Read and write` only.
+  - Avoid using classic PAT unless absolutely necessary.
+  - Rotate the token regularly and revoke it immediately if exposed.
   - Why needed: tags created by default `GITHUB_TOKEN` do not trigger the second workflow.
 
 Release flow:
