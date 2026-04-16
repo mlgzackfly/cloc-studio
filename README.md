@@ -57,3 +57,18 @@ NOTARIZE=1 \
 NOTARY_PROFILE="your-notary-profile" \
 ./scripts/package_app.sh
 ```
+
+## GitHub Actions release
+This repository includes two workflows:
+
+- `.github/workflows/create-tag.yml`: manual workflow to create `vX.Y.Z` tags.
+- `.github/workflows/release-on-tag.yml`: auto-build and GitHub Release on tag push.
+
+Release flow:
+
+1. Push code to `main`.
+2. Run **Create Release Tag** workflow in GitHub Actions with version (for example `0.1.0`).
+3. Tag `v0.1.0` is created and pushed.
+4. **Release on Tag** workflow builds `dist/ClocGUI.zip` and publishes a GitHub Release with:
+   - `ClocGUI.zip`
+   - `ClocGUI.zip.sha256`
