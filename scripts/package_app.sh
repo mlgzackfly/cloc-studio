@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-APP_NAME="ClocGUI"
+APP_NAME="cloc-studio"
 BUNDLE_ID="com.cloc.gui"
 VERSION="0.1.0"
 BUILD_DIR="$ROOT_DIR/.build/arm64-apple-macosx/release"
@@ -35,6 +35,8 @@ fi
 
 mkdir -p "$DIST_DIR"
 rm -rf "$APP_DIR" "$ZIP_PATH"
+# Remove legacy artifact names from older builds.
+rm -rf "$DIST_DIR/ClocGUI.app" "$DIST_DIR/ClocGUI.zip"
 mkdir -p "$MACOS_DIR" "$RES_DIR"
 
 cp "$BIN_PATH" "$MACOS_DIR/$APP_NAME"

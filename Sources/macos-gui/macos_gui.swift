@@ -147,10 +147,10 @@ final class ClocViewModel: ObservableObject {
 
         do {
             guard !targetPaths.isEmpty else {
-                throw NSError(domain: "ClocGUI", code: 1, userInfo: [NSLocalizedDescriptionKey: "Please select or drop at least one file/folder."])
+                throw NSError(domain: "cloc-studio", code: 1, userInfo: [NSLocalizedDescriptionKey: "Please select or drop at least one file/folder."])
             }
             guard let executable = resolveExecutableURL() else {
-                throw NSError(domain: "ClocGUI", code: 2, userInfo: [NSLocalizedDescriptionKey: "cloc executable not found. Please bundle it in app resources or install it in /opt/homebrew/bin or /usr/local/bin."])
+                throw NSError(domain: "cloc-studio", code: 2, userInfo: [NSLocalizedDescriptionKey: "cloc executable not found. Please bundle it in app resources or install it in /opt/homebrew/bin or /usr/local/bin."])
             }
             resolvedClocPath = executable.path
 
@@ -195,7 +195,7 @@ final class ClocViewModel: ObservableObject {
                     continuation.resume(returning: (out, err))
                 } else {
                     let message = err.isEmpty ? "cloc exited with status \(proc.terminationStatus)" : err
-                    continuation.resume(throwing: NSError(domain: "ClocGUI", code: Int(proc.terminationStatus), userInfo: [NSLocalizedDescriptionKey: message]))
+                    continuation.resume(throwing: NSError(domain: "cloc-studio", code: Int(proc.terminationStatus), userInfo: [NSLocalizedDescriptionKey: message]))
                 }
             }
 
@@ -209,11 +209,11 @@ final class ClocViewModel: ObservableObject {
 
     private func parse(jsonText: String) throws {
         guard let data = jsonText.data(using: .utf8) else {
-            throw NSError(domain: "ClocGUI", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to decode JSON output as UTF-8."])
+            throw NSError(domain: "cloc-studio", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to decode JSON output as UTF-8."])
         }
 
         guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw NSError(domain: "ClocGUI", code: 3, userInfo: [NSLocalizedDescriptionKey: "Unexpected JSON structure from cloc."])
+            throw NSError(domain: "cloc-studio", code: 3, userInfo: [NSLocalizedDescriptionKey: "Unexpected JSON structure from cloc."])
         }
 
         let header = root["header"] as? [String: Any]
@@ -698,16 +698,21 @@ struct ContentView: View {
     }
 
     private func makeBreakdownHTMLTable() -> String {
-        var html = "<table><thead><tr>"
-        html += "<th>Language</th><th>Files</th><th>Code</th><th>Comment</th><th>Blank</th>"
+        var html = "<table style=\"border-collapse:collapse;border:1px solid #222;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif;font-size:12px;\">"
+        html += "<thead><tr>"
+        html += "<th style=\"border:1px solid #222;padding:6px 8px;text-align:left;\">Language</th>"
+        html += "<th style=\"border:1px solid #222;padding:6px 8px;text-align:right;\">Files</th>"
+        html += "<th style=\"border:1px solid #222;padding:6px 8px;text-align:right;\">Code</th>"
+        html += "<th style=\"border:1px solid #222;padding:6px 8px;text-align:right;\">Comment</th>"
+        html += "<th style=\"border:1px solid #222;padding:6px 8px;text-align:right;\">Blank</th>"
         html += "</tr></thead><tbody>"
         for row in viewModel.rows {
             html += "<tr>"
-            html += "<td>\(escapeHTML(row.name))</td>"
-            html += "<td>\(row.files)</td>"
-            html += "<td>\(row.code)</td>"
-            html += "<td>\(row.comment)</td>"
-            html += "<td>\(row.blank)</td>"
+            html += "<td style=\"border:1px solid #222;padding:6px 8px;text-align:left;\">\(escapeHTML(row.name))</td>"
+            html += "<td style=\"border:1px solid #222;padding:6px 8px;text-align:right;\">\(row.files)</td>"
+            html += "<td style=\"border:1px solid #222;padding:6px 8px;text-align:right;\">\(row.code)</td>"
+            html += "<td style=\"border:1px solid #222;padding:6px 8px;text-align:right;\">\(row.comment)</td>"
+            html += "<td style=\"border:1px solid #222;padding:6px 8px;text-align:right;\">\(row.blank)</td>"
             html += "</tr>"
         }
         html += "</tbody></table>"
@@ -727,11 +732,11 @@ struct ContentView: View {
 }
 
 @main
-struct ClocGUIApp: App {
+struct ClocStudioApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        WindowGroup("Cloc GUI") {
+        WindowGroup("cloc-studio") {
             ContentView()
                 .preferredColorScheme(.light)
         }

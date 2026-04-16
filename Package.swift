@@ -7,7 +7,7 @@ let package = Package(
         .macOS(.v13),
     ],
     products: [
-        .executable(name: "ClocGUI", targets: ["macos-gui"]),
+        .executable(name: "cloc-studio", targets: ["macos-gui"]),
     ],
     targets: [
         .executableTarget(

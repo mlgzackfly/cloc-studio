@@ -20,12 +20,12 @@ jobs:
         run: ./scripts/package_app.sh
 
       - name: Create checksum
-        run: shasum -a 256 dist/ClocGUI.zip > dist/ClocGUI.zip.sha256
+        run: shasum -a 256 dist/cloc-studio.zip > dist/cloc-studio.zip.sha256
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/ClocGUI.zip
-            dist/ClocGUI.zip.sha256
+            dist/cloc-studio.zip
+            dist/cloc-studio.zip.sha256
           generate_release_notes: true

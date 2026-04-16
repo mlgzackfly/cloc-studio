@@ -2,6 +2,8 @@
 
 `cloc-studio` is a macOS SwiftUI desktop app for visualizing code-count results from `cloc`.
 
+![cloc-studio icon](assets/AppIcon-1024.png)
+
 ## IMPORTANT: Upstream Credit
 This project is a GUI wrapper for `cloc`.
 
@@ -55,7 +57,7 @@ This repository includes:
 ```bash
 cd macos-gui
 swift build
-swift run ClocGUI
+swift run cloc-studio
 ```
 
 ## Package app
@@ -65,20 +67,20 @@ cd macos-gui
 ```
 
 Output:
-- `dist/ClocGUI.app`
-- `dist/ClocGUI.zip`
+- `dist/cloc-studio.app`
+- `dist/cloc-studio.zip`
 
 ## If macOS blocks opening the app
 If Gatekeeper blocks launch for a downloaded build, remove quarantine attributes:
 
 ```bash
-xattr -d com.apple.quarantine /path/to/ClocGUI.app
+xattr -d com.apple.quarantine /path/to/cloc-studio.app
 ```
 
 If needed for nested files:
 
 ```bash
-xattr -dr com.apple.quarantine /path/to/ClocGUI.app
+xattr -dr com.apple.quarantine /path/to/cloc-studio.app
 ```
 
 ## Notarized release (optional)
@@ -107,6 +109,6 @@ Release flow:
 1. Push code to `main`.
 2. Run **Create Release Tag** workflow in GitHub Actions with version (for example `0.1.0`).
 3. Tag `v0.1.0` is created and pushed.
-4. **Release on Tag** workflow builds `dist/ClocGUI.zip` and publishes a GitHub Release with:
-   - `ClocGUI.zip`
-   - `ClocGUI.zip.sha256`
+4. **Release on Tag** workflow builds `dist/cloc-studio.zip` and publishes a GitHub Release with:
+   - `cloc-studio.zip`
+   - `cloc-studio.zip.sha256`
