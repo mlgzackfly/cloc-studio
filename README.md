@@ -64,6 +64,12 @@ This repository includes two workflows:
 - `.github/workflows/create-tag.yml`: manual workflow to create `vX.Y.Z` tags.
 - `.github/workflows/release-on-tag.yml`: auto-build and GitHub Release on tag push.
 
+Required repository secret:
+
+- `RELEASE_PAT`: Personal Access Token used by `create-tag.yml` to push tags.
+  - Recommended scopes (classic PAT): `repo`, `workflow`
+  - Why needed: tags pushed by default `GITHUB_TOKEN` do not trigger the second workflow.
+
 Release flow:
 
 1. Push code to `main`.

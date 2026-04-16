@@ -16,10 +16,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Validate PAT secret
+        run: |
+          if [[ -z "${{ secrets.RELEASE_PAT }}" ]]; then
+            echo "Missing repository secret RELEASE_PAT"
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_PAT }}
 
       - name: Validate version
         run: |
