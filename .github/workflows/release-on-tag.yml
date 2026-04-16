@@ -1,0 +1,31 @@
+name: Release on Tag
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build app package
+        run: ./scripts/package_app.sh
+
+      - name: Create checksum
+        run: shasum -a 256 dist/ClocGUI.zip > dist/ClocGUI.zip.sha256
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/ClocGUI.zip
+            dist/ClocGUI.zip.sha256
+          generate_release_notes: true
