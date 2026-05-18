@@ -161,7 +161,7 @@ final class ClocViewModel: ObservableObject {
             var args = buildArgs()
             args.append(contentsOf: targetPaths.map(normalizePath))
 
-            lastCommand = ([executable.path] + args).joined(separator: " ")
+            lastCommand = ([executable.path] + args).map(shellQuote).joined(separator: " ")
 
             let (stdout, stderr) = try await runProcess(executable: executable, arguments: args)
             if !stderr.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -179,21 +179,36 @@ final class ClocViewModel: ObservableObject {
     }
 
     private func runProcess(executable: URL, arguments: [String]) async throws -> (String, String) {
-        try await withCheckedThrowingContinuation { continuation in
+        let fileManager = FileManager.default
+        let tempDir = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("cloc-studio-\(UUID().uuidString)", isDirectory: true)
+        let stdoutURL = tempDir.appendingPathComponent("stdout.json")
+        let stderrURL = tempDir.appendingPathComponent("stderr.txt")
+
+        try fileManager.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        _ = fileManager.createFile(atPath: stdoutURL.path, contents: nil)
+        _ = fileManager.createFile(atPath: stderrURL.path, contents: nil)
+
+        let stdoutHandle = try FileHandle(forWritingTo: stdoutURL)
+        let stderrHandle = try FileHandle(forWritingTo: stderrURL)
+
+        return try await withCheckedThrowingContinuation { continuation in
             let process = Process()
-            let stdoutPipe = Pipe()
-            let stderrPipe = Pipe()
 
             process.executableURL = executable
             process.arguments = arguments
-            process.standardOutput = stdoutPipe
-            process.standardError = stderrPipe
+            process.standardOutput = stdoutHandle
+            process.standardError = stderrHandle
 
             process.terminationHandler = { proc in
-                let outData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-                let errData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+                try? stdoutHandle.close()
+                try? stderrHandle.close()
+
+                let outData = (try? Data(contentsOf: stdoutURL)) ?? Data()
+                let errData = (try? Data(contentsOf: stderrURL)) ?? Data()
                 let out = String(decoding: outData, as: UTF8.self)
                 let err = String(decoding: errData, as: UTF8.self)
+                try? FileManager.default.removeItem(at: tempDir)
 
                 if proc.terminationStatus == 0 {
                     continuation.resume(returning: (out, err))
@@ -206,6 +221,9 @@ final class ClocViewModel: ObservableObject {
             do {
                 try process.run()
             } catch {
+                try? stdoutHandle.close()
+                try? stderrHandle.close()
+                try? fileManager.removeItem(at: tempDir)
                 continuation.resume(throwing: error)
             }
         }
@@ -285,6 +303,14 @@ final class ClocViewModel: ObservableObject {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         args.append("\(flag)=\(trimmed)")
+    }
+
+    private func shellQuote(_ part: String) -> String {
+        let safeCharacters = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_+-./=,:")
+        if !part.isEmpty, part.unicodeScalars.allSatisfy({ safeCharacters.contains($0) }) {
+            return part
+        }
+        return "'\(part.replacingOccurrences(of: "'", with: "'\\''"))'"
     }
 }
 

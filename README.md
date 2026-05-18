@@ -55,14 +55,12 @@ This repository includes:
 
 ## Local development
 ```bash
-cd macos-gui
 swift build
 swift run cloc-studio
 ```
 
 ## Package app
 ```bash
-cd macos-gui
 ./scripts/package_app.sh
 ```
 

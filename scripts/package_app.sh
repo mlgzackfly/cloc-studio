@@ -5,8 +5,6 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP_NAME="cloc-studio"
 BUNDLE_ID="com.cloc.gui"
 VERSION="0.1.0"
-BUILD_DIR="$ROOT_DIR/.build/arm64-apple-macosx/release"
-BIN_PATH="$BUILD_DIR/$APP_NAME"
 APP_DIR="$ROOT_DIR/dist/$APP_NAME.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
@@ -28,6 +26,8 @@ STAPLE="${STAPLE:-1}"
 
 cd "$ROOT_DIR"
 swift build -c release
+BUILD_DIR="$(swift build -c release --show-bin-path)"
+BIN_PATH="$BUILD_DIR/$APP_NAME"
 ./scripts/build_icon.sh
 
 if [[ ! -x "$BIN_PATH" ]]; then
