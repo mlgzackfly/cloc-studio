@@ -13,5 +13,9 @@ let package = Package(
         .executableTarget(
             name: "macos-gui"
         ),
+        .testTarget(
+            name: "macos-guiTests",
+            dependencies: ["macos-gui"]
+        ),
     ]
 )
