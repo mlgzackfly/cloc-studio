@@ -23,6 +23,15 @@ final class DroppedPathAccumulator: @unchecked Sendable {
 struct ContentView: View {
     @StateObject private var viewModel = ClocViewModel()
     @State private var isDropTargeted = false
+    @AppStorage("clocStudioLanguage") private var languageRawValue = AppLanguage.english.rawValue
+
+    private var language: AppLanguage {
+        AppLanguage(rawValue: languageRawValue) ?? .english
+    }
+
+    private var strings: AppStrings {
+        AppStrings(language: language)
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -66,22 +75,40 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 760, minHeight: 580)
+        .onAppear {
+            viewModel.language = language
+        }
+        .onChange(of: languageRawValue) { _ in
+            viewModel.language = language
+        }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Cloc Studio")
-                .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundStyle(Color(red: 0.14, green: 0.18, blue: 0.28))
-            Text("Count source lines with a fast visual wrapper")
-                .font(.system(size: 14, weight: .medium, design: .rounded))
-                .foregroundStyle(Color(red: 0.28, green: 0.34, blue: 0.45))
-            Label("macOS Prototype", systemImage: "hammer.fill")
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 7)
-                .background(Color.white.opacity(0.85), in: Capsule())
-                .foregroundStyle(Color(red: 0.20, green: 0.29, blue: 0.39))
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Cloc Studio")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(red: 0.14, green: 0.18, blue: 0.28))
+                Text(strings.subtitle)
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color(red: 0.28, green: 0.34, blue: 0.45))
+                Label(strings.prototypeBadge, systemImage: "hammer.fill")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(Color.white.opacity(0.85), in: Capsule())
+                    .foregroundStyle(Color(red: 0.20, green: 0.29, blue: 0.39))
+            }
+
+            Spacer()
+
+            Picker("", selection: $languageRawValue) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(language.displayName).tag(language.rawValue)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 150)
         }
     }
 
@@ -89,32 +116,35 @@ struct ContentView: View {
         panel {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Label("Inputs", systemImage: "slider.horizontal.3")
+                    Label(strings.inputs, systemImage: "slider.horizontal.3")
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .foregroundStyle(Color(red: 0.16, green: 0.23, blue: 0.34))
                     Spacer()
                     if !viewModel.targetPaths.isEmpty {
-                        Button("Clear") { viewModel.clearTargets() }
+                        Button(strings.clear) { viewModel.clearTargets() }
                             .buttonStyle(.bordered)
                             .tint(Color(red: 0.95, green: 0.35, blue: 0.35))
                     }
-                    Button("Select") { viewModel.chooseTargets() }
+                    Button(strings.select) {
+                        viewModel.language = language
+                        viewModel.chooseTargets()
+                    }
                         .buttonStyle(.bordered)
                         .tint(Color(red: 0.16, green: 0.57, blue: 0.95))
                 }
 
                 HStack {
-                    Text("Targets")
+                    Text(strings.targets)
                         .frame(width: 88, alignment: .leading)
                         .foregroundStyle(Color(red: 0.24, green: 0.31, blue: 0.41))
-                    Text("\(viewModel.targetPaths.count) selected")
+                    Text(strings.selectedCount(viewModel.targetPaths.count))
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundStyle(Color(red: 0.24, green: 0.31, blue: 0.41))
                     Spacer()
                 }
 
                 if viewModel.targetPaths.isEmpty {
-                    Text("Drop files/folders below or click Select.")
+                    Text(strings.dropOrSelectHint)
                         .font(.system(size: 12, weight: .medium, design: .rounded))
                         .foregroundStyle(Color(red: 0.40, green: 0.46, blue: 0.56))
                 } else {
@@ -138,12 +168,12 @@ struct ContentView: View {
                 }
 
                 LazyVGrid(columns: filterColumns, spacing: 10) {
-                    filterField(title: "Exclude dirs", placeholder: ".git,node_modules,dist", text: $viewModel.options.excludeDirs)
-                    filterField(title: "Include lang", placeholder: "Swift,Objective-C", text: $viewModel.options.includeLangs)
-                    filterField(title: "Exclude lang", placeholder: "Markdown,JSON", text: $viewModel.options.excludeLangs)
-                    filterField(title: "Include ext", placeholder: "swift,m,mm", text: $viewModel.options.includeExts)
-                    filterField(title: "Exclude ext", placeholder: "min.js,map", text: $viewModel.options.excludeExts)
-                    filterField(title: "Max MB", placeholder: "20", text: $viewModel.options.maxFileSizeMB)
+                    filterField(title: strings.excludeDirs, placeholder: ".git,node_modules,dist", text: $viewModel.options.excludeDirs)
+                    filterField(title: strings.includeLang, placeholder: "Swift,Objective-C", text: $viewModel.options.includeLangs)
+                    filterField(title: strings.excludeLang, placeholder: "Markdown,JSON", text: $viewModel.options.excludeLangs)
+                    filterField(title: strings.includeExt, placeholder: "swift,m,mm", text: $viewModel.options.includeExts)
+                    filterField(title: strings.excludeExt, placeholder: "min.js,map", text: $viewModel.options.excludeExts)
+                    filterField(title: strings.maxMB, placeholder: "20", text: $viewModel.options.maxFileSizeMB)
                 }
 
                 dropZone
@@ -153,19 +183,20 @@ struct ContentView: View {
 
     private var optionToggles: some View {
         Group {
-            Toggle("Use git scope (--vcs=git)", isOn: $viewModel.options.useVCSGit)
-            Toggle("Break down by file (--by-file)", isOn: $viewModel.options.byFile)
-            Toggle("Skip uniqueness check", isOn: $viewModel.options.skipUniqueness)
-            Toggle("Auto extract archives", isOn: $viewModel.options.autoExtractArchives)
+            Toggle(strings.useGitScope, isOn: $viewModel.options.useVCSGit)
+            Toggle(strings.byFile, isOn: $viewModel.options.byFile)
+            Toggle(strings.skipUniqueness, isOn: $viewModel.options.skipUniqueness)
+            Toggle(strings.autoExtractArchives, isOn: $viewModel.options.autoExtractArchives)
         }
     }
 
     private var runControls: some View {
         HStack(spacing: 10) {
             Button {
+                viewModel.language = language
                 viewModel.run()
             } label: {
-                Label(viewModel.isRunning ? "Running..." : "Run cloc", systemImage: "play.fill")
+                Label(viewModel.isRunning ? strings.running : strings.runCloc, systemImage: "play.fill")
                     .font(.system(size: 13, weight: .bold, design: .rounded))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
@@ -178,7 +209,7 @@ struct ContentView: View {
                 Button {
                     viewModel.cancel()
                 } label: {
-                    Label("Cancel", systemImage: "xmark.circle")
+                    Label(strings.cancel, systemImage: "xmark.circle")
                 }
                 .buttonStyle(.bordered)
             }
@@ -193,7 +224,7 @@ struct ContentView: View {
     private var commandAndErrors: some View {
         VStack(alignment: .leading, spacing: 8) {
             if !viewModel.lastCommand.isEmpty {
-                Text("Last command: \(viewModel.lastCommand)")
+                Text("\(strings.lastCommand): \(viewModel.lastCommand)")
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundStyle(Color(red: 0.35, green: 0.42, blue: 0.52))
                     .lineLimit(2)
@@ -202,7 +233,7 @@ struct ContentView: View {
             }
 
             if !viewModel.errorDetails.isEmpty {
-                DisclosureGroup("Details") {
+                DisclosureGroup(strings.details) {
                     ScrollView {
                         Text(viewModel.errorDetails)
                             .font(.system(size: 11, weight: .regular, design: .monospaced))
@@ -224,12 +255,12 @@ struct ContentView: View {
             panel {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
-                        statPill(title: "Files", value: "\(summary.files)", color: Color(red: 0.36, green: 0.69, blue: 0.95))
-                        statPill(title: "Code", value: "\(summary.code)", color: Color(red: 0.21, green: 0.78, blue: 0.58))
-                        statPill(title: "Comment", value: "\(summary.comment)", color: Color(red: 0.98, green: 0.68, blue: 0.31))
-                        statPill(title: "Blank", value: "\(summary.blank)", color: Color(red: 0.77, green: 0.58, blue: 0.95))
+                        statPill(title: strings.files, value: "\(summary.files)", color: Color(red: 0.36, green: 0.69, blue: 0.95))
+                        statPill(title: strings.code, value: "\(summary.code)", color: Color(red: 0.21, green: 0.78, blue: 0.58))
+                        statPill(title: strings.comment, value: "\(summary.comment)", color: Color(red: 0.98, green: 0.68, blue: 0.31))
+                        statPill(title: strings.blank, value: "\(summary.blank)", color: Color(red: 0.77, green: 0.58, blue: 0.95))
                         if let elapsed = summary.elapsedSeconds {
-                            statPill(title: "Elapsed", value: String(format: "%.3fs", elapsed), color: Color(red: 0.96, green: 0.52, blue: 0.45))
+                            statPill(title: strings.elapsed, value: String(format: "%.3fs", elapsed), color: Color(red: 0.96, green: 0.52, blue: 0.45))
                         }
                     }
                 }
@@ -241,17 +272,26 @@ struct ContentView: View {
         panel {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Label(viewModel.mode.breakdownTitle, systemImage: viewModel.mode == .file ? "doc.text" : "chart.bar.xaxis")
+                    Label(strings.breakdownTitle(for: viewModel.mode), systemImage: viewModel.mode == .file ? "doc.text" : "chart.bar.xaxis")
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .foregroundStyle(Color(red: 0.16, green: 0.23, blue: 0.34))
                     Spacer()
-                    Button("Copy Table") { viewModel.copyBreakdownAsWordTable() }
+                    Button(strings.copyTable) {
+                        viewModel.language = language
+                        viewModel.copyBreakdownAsWordTable()
+                    }
                         .buttonStyle(.bordered)
                         .disabled(viewModel.rows.isEmpty)
-                    Button("Copy Text") { viewModel.copyBreakdownAsText() }
+                    Button(strings.copyText) {
+                        viewModel.language = language
+                        viewModel.copyBreakdownAsText()
+                    }
                         .buttonStyle(.bordered)
                         .disabled(viewModel.rows.isEmpty)
-                    Button("Copy Markdown") { viewModel.copyBreakdownAsMarkdown() }
+                    Button(strings.copyMarkdown) {
+                        viewModel.language = language
+                        viewModel.copyBreakdownAsMarkdown()
+                    }
                         .buttonStyle(.bordered)
                         .disabled(viewModel.rows.isEmpty)
                 }
@@ -272,7 +312,7 @@ struct ContentView: View {
             .overlay(
                 HStack(spacing: 8) {
                     Image(systemName: "tray.and.arrow.down.fill")
-                    Text("Drop files/folders here to select and run")
+                    Text(strings.dropZone)
                 }
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
                 .foregroundStyle(Color(red: 0.22, green: 0.31, blue: 0.41))
@@ -374,16 +414,16 @@ struct ContentView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             VStack(spacing: 0) {
                 HStack(spacing: 0) {
-                    breakdownHeader(viewModel.mode.rowTitle, width: 300, align: .leading)
-                    breakdownHeader("Files", width: 90)
-                    breakdownHeader("Code", width: 90)
-                    breakdownHeader("Comment", width: 100)
-                    breakdownHeader("Blank", width: 90)
+                    breakdownHeader(strings.rowTitle(for: viewModel.mode), width: 300, align: .leading)
+                    breakdownHeader(strings.files, width: 90)
+                    breakdownHeader(strings.code, width: 90)
+                    breakdownHeader(strings.comment, width: 100)
+                    breakdownHeader(strings.blank, width: 90)
                 }
                 .background(Color.white.opacity(0.75))
 
                 if viewModel.rows.isEmpty {
-                    Text("No results yet")
+                    Text(strings.noResultsYet)
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(Color(red: 0.40, green: 0.46, blue: 0.56))
                         .frame(maxWidth: .infinity, minHeight: 120)

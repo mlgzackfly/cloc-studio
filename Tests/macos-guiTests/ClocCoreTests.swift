@@ -4,6 +4,13 @@ import Testing
 
 struct ClocCoreTests {
     @Test
+    func appStringsSwitchBetweenEnglishAndTraditionalChinese() {
+        #expect(AppStrings(language: .english).runCloc == "Run cloc")
+        #expect(AppStrings(language: .traditionalChinese).runCloc == "執行 cloc")
+        #expect(AppStrings(language: .traditionalChinese).breakdownTitle(for: .language) == "語言統計")
+    }
+
+    @Test
     func defaultArgumentsHideRateFields() throws {
         #expect(try ClocOptions().buildArguments() == ["--json", "--hide-rate", "--vcs=git"])
     }
