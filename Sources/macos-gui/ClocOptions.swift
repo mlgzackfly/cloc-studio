@@ -1,7 +1,7 @@
 import Foundation
 
 struct ClocOptions: Equatable {
-    var useVCSGit = false
+    var useVCSGit = true
     var byFile = false
     var excludeDirs = ""
     var includeLangs = ""
@@ -13,7 +13,7 @@ struct ClocOptions: Equatable {
     var autoExtractArchives = false
 
     func buildArguments() throws -> [String] {
-        var args = ["--json"]
+        var args = ["--json", "--hide-rate"]
         if useVCSGit { args.append("--vcs=git") }
         if byFile { args.append("--by-file") }
         if skipUniqueness { args.append("--skip-uniqueness") }

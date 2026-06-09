@@ -55,8 +55,8 @@ enum ClocStudioError: LocalizedError, Equatable {
     case noTargets
     case executableNotFound
     case invalidOption(String)
-    case invalidJSON
-    case unexpectedJSON
+    case invalidJSON(String)
+    case unexpectedJSON(String)
     case processFailed(status: Int32, stderr: String)
     case timedOut(seconds: TimeInterval)
     case cancelled
@@ -70,10 +70,10 @@ enum ClocStudioError: LocalizedError, Equatable {
             return "cloc executable not found. Bundle it in app resources or install it in /opt/homebrew/bin or /usr/local/bin."
         case .invalidOption(let message):
             return message
-        case .invalidJSON:
-            return "Failed to decode JSON output as UTF-8."
-        case .unexpectedJSON:
-            return "Unexpected JSON structure from cloc."
+        case .invalidJSON(let message):
+            return message
+        case .unexpectedJSON(let message):
+            return message
         case .processFailed(let status, let stderr):
             let trimmed = stderr.trimmingCharacters(in: .whitespacesAndNewlines)
             return trimmed.isEmpty ? "cloc exited with status \(status)." : trimmed

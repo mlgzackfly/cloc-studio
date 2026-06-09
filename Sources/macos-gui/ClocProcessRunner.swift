@@ -156,8 +156,8 @@ private final class RunState: @unchecked Sendable {
         timeoutWork = nil
         try? stdoutHandle.close()
         try? stderrHandle.close()
-        try? FileManager.default.removeItem(at: tempDir)
         clearCurrent()
         resume()
+        try? FileManager.default.removeItem(at: tempDir)
     }
 }

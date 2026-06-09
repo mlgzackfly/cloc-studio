@@ -4,6 +4,11 @@ import Testing
 
 struct ClocCoreTests {
     @Test
+    func defaultArgumentsHideRateFields() throws {
+        #expect(try ClocOptions().buildArguments() == ["--json", "--hide-rate", "--vcs=git"])
+    }
+
+    @Test
     func buildsArgumentsWithNormalizedListsAndValidatedMaxSize() throws {
         let options = ClocOptions(
             useVCSGit: true,
@@ -19,6 +24,7 @@ struct ClocCoreTests {
 
         #expect(try options.buildArguments() == [
             "--json",
+            "--hide-rate",
             "--vcs=git",
             "--by-file",
             "--skip-uniqueness",
@@ -56,6 +62,60 @@ struct ClocCoreTests {
         #expect(result.summary == ClocSummary(files: 3, blank: 4, comment: 4, code: 60, elapsedSeconds: 0.12))
         #expect(result.rows.map(\.name) == ["Swift", "Markdown"])
         #expect(result.rows.first?.code == 50)
+    }
+
+    @Test
+    func parsesJsonWithSurroundingProcessNoise() throws {
+        let json = """
+        warning before json
+        {
+          "Swift": { "nFiles": 1, "blank": 0, "comment": 0, "code": 5 },
+          "SUM": { "nFiles": 1, "blank": 0, "comment": 0, "code": 5 }
+        }
+        trailing note
+        """
+
+        let result = try ClocParser.parse(jsonText: json, mode: .language)
+
+        #expect(result.summary.code == 5)
+        #expect(result.rows == [
+            ClocRow(name: "Swift", files: 1, blank: 0, comment: 0, code: 5),
+        ])
+    }
+
+    @Test
+    func parsesClocJsonWithNonStandardRateValues() throws {
+        let json = """
+        {
+          "header": {
+            "elapsed_seconds": 0,
+            "n_files": 1,
+            "n_lines": 5,
+            "files_per_second": inf,
+            "lines_per_second": nan
+          },
+          "Swift": { "nFiles": 1, "blank": 0, "comment": 0, "code": 5 },
+          "SUM": { "nFiles": 1, "blank": 0, "comment": 0, "code": 5 }
+        }
+        """
+
+        let result = try ClocParser.parse(jsonText: json, mode: .language)
+
+        #expect(result.summary.files == 1)
+        #expect(result.summary.code == 5)
+        #expect(result.rows.first?.name == "Swift")
+    }
+
+    @Test
+    func reportsReadableErrorForMalformedJson() {
+        do {
+            _ = try ClocParser.parse(jsonText: "not json", mode: .language)
+            Issue.record("Expected malformed JSON to throw")
+        } catch let error as ClocStudioError {
+            #expect(error.localizedDescription.hasPrefix("Failed to parse cloc JSON output:"))
+        } catch {
+            Issue.record("Expected ClocStudioError, got \(error)")
+        }
     }
 
     @Test
@@ -144,6 +204,19 @@ struct ClocCoreTests {
         let extractedRoot = URL(fileURLWithPath: result.paths[0])
         let extractedFiles = try allFiles(in: extractedRoot).map(\.lastPathComponent)
         #expect(extractedFiles.contains("hello.swift"))
+    }
+
+    @Test
+    func processRunnerCapturesStdoutAndStderr() async throws {
+        let runner = ClocProcessRunner()
+        let output = try await runner.run(
+            executable: URL(fileURLWithPath: "/bin/sh"),
+            arguments: ["-c", "printf '{\"ok\":true}'; printf 'note' >&2"],
+            timeout: 5
+        )
+
+        #expect(output.stdout == "{\"ok\":true}")
+        #expect(output.stderr == "note")
     }
 
     @Test

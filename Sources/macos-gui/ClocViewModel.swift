@@ -120,7 +120,11 @@ final class ClocViewModel: ObservableObject {
 
             statusMessage = "Running..."
             let output = try await runner.run(executable: executable, arguments: args)
-            result = try ClocParser.parse(jsonText: output.stdout, mode: options.byFile ? .file : .language)
+            do {
+                result = try ClocParser.parse(jsonText: output.stdout, mode: options.byFile ? .file : .language)
+            } catch {
+                throw ClocStudioError.invalidJSON(parseFailureMessage(error: error, stdout: output.stdout, stderr: output.stderr))
+            }
 
             let stderr = output.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
             let extractionMessage = archiveExtractionMessage(preparedTargets.extractedArchives)
@@ -152,6 +156,31 @@ final class ClocViewModel: ObservableObject {
             return localized.errorDescription ?? String(describing: error)
         }
         return String(describing: error)
+    }
+
+    private func parseFailureMessage(error: Error, stdout: String, stderr: String) -> String {
+        var parts = ["Failed to parse cloc JSON output: \(error.localizedDescription)"]
+        let stdoutPreview = outputPreview(stdout)
+        let stderrPreview = outputPreview(stderr)
+        if !stdoutPreview.isEmpty {
+            parts.append("stdout preview:\n\(stdoutPreview)")
+        }
+        if !stderrPreview.isEmpty {
+            parts.append("stderr preview:\n\(stderrPreview)")
+        }
+        if stdoutPreview.isEmpty && stderrPreview.isEmpty {
+            parts.append("cloc produced no output.")
+        }
+        return parts.joined(separator: "\n\n")
+    }
+
+    private func outputPreview(_ text: String, limit: Int = 2000) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "" }
+        if trimmed.count <= limit {
+            return trimmed
+        }
+        return "\(trimmed.prefix(limit))\n... truncated ..."
     }
 
     private func copyToPasteboard(_ text: String) {
