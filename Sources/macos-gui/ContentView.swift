@@ -224,12 +224,12 @@ struct ContentView: View {
             panel {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
-                        statPill(title: "Files", value: "\(summary.files)")
-                        statPill(title: "Code", value: "\(summary.code)")
-                        statPill(title: "Comment", value: "\(summary.comment)")
-                        statPill(title: "Blank", value: "\(summary.blank)")
+                        statPill(title: "Files", value: "\(summary.files)", color: Color(red: 0.36, green: 0.69, blue: 0.95))
+                        statPill(title: "Code", value: "\(summary.code)", color: Color(red: 0.21, green: 0.78, blue: 0.58))
+                        statPill(title: "Comment", value: "\(summary.comment)", color: Color(red: 0.98, green: 0.68, blue: 0.31))
+                        statPill(title: "Blank", value: "\(summary.blank)", color: Color(red: 0.77, green: 0.58, blue: 0.95))
                         if let elapsed = summary.elapsedSeconds {
-                            statPill(title: "Elapsed", value: String(format: "%.3fs", elapsed))
+                            statPill(title: "Elapsed", value: String(format: "%.3fs", elapsed), color: Color(red: 0.96, green: 0.52, blue: 0.45))
                         }
                     }
                 }
@@ -336,7 +336,7 @@ struct ContentView: View {
         .background(Color.white.opacity(0.86), in: Capsule())
     }
 
-    private func statPill(title: String, value: String) -> some View {
+    private func statPill(title: String, value: String, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.system(size: 11, weight: .semibold, design: .rounded))
@@ -347,7 +347,7 @@ struct ContentView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
-        .background(Color(red: 0.36, green: 0.69, blue: 0.95).opacity(0.20), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(color.opacity(0.20), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func panel<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
