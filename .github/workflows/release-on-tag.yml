@@ -16,6 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Build app package
@@ -23,6 +24,85 @@ jobs:
 
       - name: Create checksum
         run: shasum -a 256 dist/cloc-studio.zip > dist/cloc-studio.zip.sha256
+
+      - name: Generate release notes
+        env:
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          TAG="${GITHUB_REF_NAME}"
+          PREVIOUS_TAG="$(git tag --sort=-v:refname | awk -v current="$TAG" 'found { print; exit } $0 == current { found = 1 }')"
+
+          if [[ -n "$PREVIOUS_TAG" ]]; then
+            RANGE="$PREVIOUS_TAG..$TAG"
+            COMPARE_URL="https://github.com/$REPO/compare/$PREVIOUS_TAG...$TAG"
+          else
+            RANGE="$TAG"
+            COMPARE_URL="https://github.com/$REPO/releases/tag/$TAG"
+          fi
+
+          NOTES="dist/release-notes.md"
+          {
+            echo "## cloc-studio ${TAG#v}"
+            echo
+            if [[ -n "$PREVIOUS_TAG" ]]; then
+              echo "Changes since \`$PREVIOUS_TAG\`."
+            else
+              echo "Initial tagged release."
+            fi
+            echo
+          } > "$NOTES"
+
+          write_section() {
+            local title="$1"
+            local pattern="$2"
+            local tmp
+            tmp="$(mktemp)"
+
+            git log "$RANGE" --no-merges --pretty=format:'%s (%h)' |
+              grep -Ei "$pattern" > "$tmp" || true
+
+            if [[ -s "$tmp" ]]; then
+              echo "### $title" >> "$NOTES"
+              sed 's/^/- /' "$tmp" >> "$NOTES"
+              echo >> "$NOTES"
+            fi
+
+            rm -f "$tmp"
+          }
+
+          write_section "Features" '^(feat|feature)| add |adds |added |enable|support|switcher|extract'
+          write_section "Fixes" '^(fix|bugfix)| fix |fixed |parser|parsing|failed|error'
+          write_section "Documentation" '^(docs|doc)|readme|screenshot'
+          write_section "Maintenance" '^(chore|refactor|test|ci|build)|package|release|version'
+
+          git log "$RANGE" --no-merges --pretty=format:'%s (%h)' > /tmp/all-commits.txt
+          if [[ -s /tmp/all-commits.txt ]]; then
+            echo "### All Changes" >> "$NOTES"
+            sed 's/^/- /' /tmp/all-commits.txt >> "$NOTES"
+            echo >> "$NOTES"
+            echo >> "$NOTES"
+          fi
+
+          {
+            echo "### Assets"
+            echo
+            echo "- \`cloc-studio.zip\`"
+            echo "- \`cloc-studio.zip.sha256\`"
+            echo
+            echo "### Install Notes"
+            echo
+            echo "If macOS blocks the downloaded app, verify the source first, then remove quarantine attributes if needed:"
+            echo
+            echo '```bash'
+            echo "xattr -dr com.apple.quarantine /path/to/cloc-studio.app"
+            echo '```'
+            echo
+            echo "**Full comparison:** $COMPARE_URL"
+          } >> "$NOTES"
+
+          cat "$NOTES"
 
       - name: Publish GitHub Release
         env:
@@ -32,5 +112,6 @@ jobs:
           gh release create "$TAG" \
             dist/cloc-studio.zip \
             dist/cloc-studio.zip.sha256 \
-            --generate-notes \
+            --title "cloc-studio ${TAG#v}" \
+            --notes-file dist/release-notes.md \
             --verify-tag
