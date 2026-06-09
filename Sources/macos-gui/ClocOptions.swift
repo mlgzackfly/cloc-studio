@@ -10,6 +10,7 @@ struct ClocOptions: Equatable {
     var excludeExts = ""
     var maxFileSizeMB = ""
     var skipUniqueness = false
+    var autoExtractArchives = false
 
     func buildArguments() throws -> [String] {
         var args = ["--json"]

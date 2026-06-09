@@ -156,6 +156,7 @@ struct ContentView: View {
             Toggle("Use git scope (--vcs=git)", isOn: $viewModel.options.useVCSGit)
             Toggle("Break down by file (--by-file)", isOn: $viewModel.options.byFile)
             Toggle("Skip uniqueness check", isOn: $viewModel.options.skipUniqueness)
+            Toggle("Auto extract archives", isOn: $viewModel.options.autoExtractArchives)
         }
     }
 

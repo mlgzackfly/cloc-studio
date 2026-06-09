@@ -92,6 +92,7 @@ final class ClocViewModel: ObservableObject {
         isRunning = true
         statusMessage = "Running..."
         errorDetails = ""
+        var archiveTemporaryDirectory: URL?
         result = ClocResult(
             mode: options.byFile ? .file : .language,
             summary: ClocSummary(files: 0, blank: 0, comment: 0, code: 0, elapsedSeconds: nil),
@@ -107,27 +108,43 @@ final class ClocViewModel: ObservableObject {
             }
             resolvedClocPath = executable.path
 
+            if options.autoExtractArchives {
+                statusMessage = "Extracting archives..."
+            }
+            let preparedTargets = try ArchiveExtractor.prepareTargets(targetPaths, autoExtract: options.autoExtractArchives)
+            archiveTemporaryDirectory = preparedTargets.temporaryDirectory
+
             var args = try options.buildArguments()
-            args.append(contentsOf: targetPaths.map { PathNormalizer.normalize($0) })
+            args.append(contentsOf: preparedTargets.paths)
             lastCommand = ShellCommandFormatter.command(executable: executable.path, arguments: args)
 
+            statusMessage = "Running..."
             let output = try await runner.run(executable: executable, arguments: args)
             result = try ClocParser.parse(jsonText: output.stdout, mode: options.byFile ? .file : .language)
 
             let stderr = output.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+            let extractionMessage = archiveExtractionMessage(preparedTargets.extractedArchives)
             if stderr.isEmpty {
-                statusMessage = "Completed"
+                statusMessage = extractionMessage ?? "Completed"
             } else {
                 statusMessage = "Completed with stderr output"
-                errorDetails = stderr
+                errorDetails = [extractionMessage, stderr].compactMap { $0 }.joined(separator: "\n\n")
             }
         } catch {
             statusMessage = "Failed: \(error.localizedDescription)"
             errorDetails = detailedMessage(for: error)
         }
 
+        if let archiveTemporaryDirectory {
+            try? FileManager.default.removeItem(at: archiveTemporaryDirectory)
+        }
         isRunning = false
         runTask = nil
+    }
+
+    private func archiveExtractionMessage(_ archives: [String]) -> String? {
+        guard !archives.isEmpty else { return nil }
+        return "Completed after extracting \(archives.count) archive\(archives.count == 1 ? "" : "s")."
     }
 
     private func detailedMessage(for error: Error) -> String {

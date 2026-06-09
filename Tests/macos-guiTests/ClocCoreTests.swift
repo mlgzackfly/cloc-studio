@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import macos_gui
 
@@ -94,9 +95,88 @@ struct ClocCoreTests {
     }
 
     @Test
+    func detectsSupportedArchiveSuffixes() {
+        #expect(ArchiveExtractor.isSupportedArchive(path: "/tmp/source.zip"))
+        #expect(ArchiveExtractor.isSupportedArchive(path: "/tmp/source.tar.gz"))
+        #expect(ArchiveExtractor.isSupportedArchive(path: "/tmp/source.TBZ2"))
+        #expect(!ArchiveExtractor.isSupportedArchive(path: "/tmp/source.swift"))
+    }
+
+    @Test
+    func leavesTargetsUnchangedWhenAutoExtractIsOff() throws {
+        let result = try ArchiveExtractor.prepareTargets(["/tmp/src", "/tmp/source.zip"], autoExtract: false)
+        #expect(result.paths == [
+            "/tmp/src",
+            "/tmp/source.zip",
+        ])
+        #expect(result.extractedArchives.isEmpty)
+        #expect(result.temporaryDirectory == nil)
+    }
+
+    @Test
+    func extractsNestedZipArchives() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cloc-studio-test-\(UUID().uuidString)", isDirectory: true)
+        let innerSource = root.appendingPathComponent("inner-source", isDirectory: true)
+        let outerSource = root.appendingPathComponent("outer-source", isDirectory: true)
+        try FileManager.default.createDirectory(at: innerSource, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: outerSource, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let swiftFile = innerSource.appendingPathComponent("hello.swift")
+        try "print(\"hello\")\n".write(to: swiftFile, atomically: true, encoding: .utf8)
+
+        let innerZip = outerSource.appendingPathComponent("inner.zip")
+        try runZip(arguments: ["-qr", innerZip.path, "."], currentDirectory: innerSource)
+
+        let outerZip = root.appendingPathComponent("outer.zip")
+        try runZip(arguments: ["-qr", outerZip.path, "."], currentDirectory: outerSource)
+
+        let result = try ArchiveExtractor.prepareTargets([outerZip.path], autoExtract: true)
+        defer {
+            if let temporaryDirectory = result.temporaryDirectory {
+                try? FileManager.default.removeItem(at: temporaryDirectory)
+            }
+        }
+
+        #expect(result.paths.count == 1)
+        #expect(result.extractedArchives.count == 2)
+        let extractedRoot = URL(fileURLWithPath: result.paths[0])
+        let extractedFiles = try allFiles(in: extractedRoot).map(\.lastPathComponent)
+        #expect(extractedFiles.contains("hello.swift"))
+    }
+
+    @Test
     func shellCommandQuotesUnsafeParts() {
         let command = ShellCommandFormatter.command(executable: "/tmp/cloc", arguments: ["--json", "/tmp/a project/it's"])
         #expect(command == "/tmp/cloc --json '/tmp/a project/it'\\''s'")
     }
 
+    private func runZip(arguments: [String], currentDirectory: URL) throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
+        process.arguments = arguments
+        process.currentDirectoryURL = currentDirectory
+        try process.run()
+        process.waitUntilExit()
+        #expect(process.terminationStatus == 0)
+    }
+
+    private func allFiles(in root: URL) throws -> [URL] {
+        guard let enumerator = FileManager.default.enumerator(
+            at: root,
+            includingPropertiesForKeys: [.isRegularFileKey]
+        ) else {
+            return []
+        }
+
+        var files: [URL] = []
+        for case let url as URL in enumerator {
+            let values = try url.resourceValues(forKeys: [.isRegularFileKey])
+            if values.isRegularFile == true {
+                files.append(url)
+            }
+        }
+        return files
+    }
 }

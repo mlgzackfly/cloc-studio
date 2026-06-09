@@ -60,6 +60,7 @@ enum ClocStudioError: LocalizedError, Equatable {
     case processFailed(status: Int32, stderr: String)
     case timedOut(seconds: TimeInterval)
     case cancelled
+    case archiveExtractionFailed(path: String, message: String)
 
     var errorDescription: String? {
         switch self {
@@ -80,6 +81,8 @@ enum ClocStudioError: LocalizedError, Equatable {
             return "cloc timed out after \(Int(seconds)) seconds."
         case .cancelled:
             return "Run cancelled."
+        case .archiveExtractionFailed(let path, let message):
+            return "Failed to extract \(path): \(message)"
         }
     }
 }
